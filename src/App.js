@@ -1,14 +1,15 @@
 
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 //https://randomuser.me/api/?results=20
 
 export default function App() {
+  const inputRef=useRef()
   const [data, setData] = useState([]);
   const [headers,setHeaders]= useState([])
   const [locationData, setLocationData] = useState([]);
   const [inputValue,setInputValue]= useState('')
-  const [filteredData,setFilteredData]=useState([])
+  const [sortConfig,setSortConfig] = useState(null)
   
   const getHeaders= (loc)=>{
     let head = []
@@ -29,13 +30,11 @@ export default function App() {
 
   const flattenLocation = (loc) => {
     let x=getHeaders(loc[0])
-
-
     let pop = [];
     loc.map((da, idx) =>{
       let new1=[];
       Object.values(da).forEach((item)=>{
-        
+  
         const val = item
         if (typeof val ==='object'){
           Object.values(val).forEach((stuff)=>{
@@ -62,7 +61,7 @@ export default function App() {
         flattenLocation(apiPeople.results.map(({ location }) => location))
       );
     });
-    
+    inputRef.current.focus()
   }, []);
 
   const fetchData = () => {
@@ -78,20 +77,35 @@ export default function App() {
   const sortColoumns=(da)=>{
     let newdata = Object.values(locationData)
     let x = headers.indexOf(da)
-  
-    newdata.sort((a, b) =>
-     a[x] > b[x] ? 1 : -1
-    )
+    let direction = 'ascending';
     
-  // setHeaders([...newHeaders]);
+    if (
+      sortConfig &&
+      sortConfig.key == x &&
+      sortConfig.direction === 'ascending'
+    ) {
+  
+      direction = 'descending';
+    }
+    setSortConfig({ key:x, direction:direction });
+    newdata.sort((a, b) =>
+  {
+    if (a[x] < b[x]) {
+      
+      return sortConfig.direction === 'ascending' ? -1 : 1;
+    }
+    if (a[x] > b[x]) {
+      return sortConfig.direction === 'ascending' ? 1 : -1;
+    }
+    return 0;
+  }
+    )
    setLocationData([...newdata]);
   }
 
   const editSearchTerm=(e,inputValue)=>{
-    
     return e.filter(row1=>{
       return row1.some(i=>{
-        //console.log(String(i).toLowerCase().includes(inputValue))
         return String(i).toLowerCase().includes(inputValue.toLowerCase())
       })
     })
@@ -101,7 +115,7 @@ export default function App() {
     <div className="App">
       <h1>Hello There!</h1>
       <h2>Start editing to see some magic happen!</h2>
-      <input type='text' value ={inputValue} onChange={(e)=>{setInputValue(e.target.value)}}/>
+      <input type='text' ref={inputRef} value ={inputValue} onChange={(e)=>{setInputValue(e.target.value)}}/>
       <table>
         <thead>
           <tr>
